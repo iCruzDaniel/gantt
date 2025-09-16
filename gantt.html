@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Diagrama de Gantt - Proyecto IoT Embarcación</title>
+        <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .header h1 {
+            color: #2d3748;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: #4a5568;
+            font-size: 1.1em;
+        }
+
+        .gantt-container {
+            overflow-x: auto;
+            margin-bottom: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .gantt-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1200px;
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        .gantt-table th {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px 10px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.9em;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .gantt-table th:first-child {
+            text-align: left;
+            width: 300px;
+            background: linear-gradient(135deg, #4c51bf, #553c9a);
+        }
+
+        .gantt-table td {
+            padding: 8px;
+            border: 1px solid #e2e8f0;
+            text-align: center;
+            position: relative;
+            height: 45px;
+        }
+
+        .gantt-table td:first-child {
+            text-align: left;
+            font-weight: 500;
+            background: #f8fafc;
+            color: #2d3748;
+            padding-left: 15px;
+            position: sticky;
+            left: 0;
+            z-index: 5;
+            border-right: 2px solid #cbd5e0;
+        }
+
+        .task-bar {
+            height: 25px;
+            border-radius: 12px;
+            position: absolute;
+            top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.75em;
+            font-weight: 600;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .task-bar:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+        }
+
+        .software { background: linear-gradient(45deg, #4299e1, #3182ce); }
+        .iot { background: linear-gradient(45deg, #48bb78, #38a169); }
+        .mechatronics { background: linear-gradient(45deg, #ed8936, #dd6b20); }
+        .integration { background: linear-gradient(45deg, #9f7aea, #805ad5); }
+
+        .category-header {
+            background: linear-gradient(135deg, #2d3748, #1a202c) !important;
+            color: white !important;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            background: white;
+            border-radius: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .legend-item:hover {
+            transform: translateY(-3px);
+            cursor: pointer;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 10px;
+        }
+
+        .legend-text {
+            font-weight: 500;
+            color: #2d3748;
+        }
+
+        .month-separator {
+            border-left: 3px solid #cbd5e0 !important;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .legend {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+
+        .milestone {
+            background: linear-gradient(45deg, #e53e3e, #c53030);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            top: 7px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-weight: bold;
+            font-size: 0.8em;
+        }
+        .milestone:hover {
+            transform: translate(-50%, -2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+        }
+    </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>📊 Sistema de Monitoreo IoT - Embarcación Eléctrica</h1>
+                <p>Cronograma de Desarrollo del Proyecto (10 Meses)</p>
+            </div>
+
+            <div class="gantt-container">
+                <table class="gantt-table">
+                    <thead>
+                        <tr>
+                            <th>Tareas y Actividades</th>
+                            <th>Mes 1</th>
+                            <th>Mes 2</th>
+                            <th class="month-separator">Mes 3</th>
+                            <th>Mes 4</th>
+                            <th>Mes 5</th>
+                            <th class="month-separator">Mes 6</th>
+                            <th>Mes 7</th>
+                            <th>Mes 8</th>
+                            <th class="month-separator">Mes 9</th>
+                            <th>Mes 10</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- DESARROLLO DE SOFTWARE -->
+                        <tr>
+                            <td class="category-header">🖥️ DESARROLLO DE
+                                SOFTWARE</td>
+                            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                        </tr>
+                        <tr>
+                            <td>Diseño de wireframes y mockups</td>
+                            <td><div class="task-bar software"
+                                    style="left: 5%; width: 90%;">Wireframes</div></td>
+                            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                        </tr>
+                        <tr>
+                            <td>Configuración entorno desarrollo</td>
+                            <td><div class="task-bar software"
+                                    style="left: 5%; width: 90%;">Config</div></td>
+                            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                        </tr>
+                        <tr>
+                            <td>Desarrollo interfaz HMI (visualización)</td>
+                            <td></td>
+                            <td><div class="task-bar software"
+                                    style="left: 5%; width: 90%;">HMI</div></td>
+                            <td><div class="task-bar software"
+                                    style="left: 5%; width: 90%;">HMI</div></td>
+                            <td><div class="task-bar software"
+                                    style="left: 5%; width: 90%;">HMI</div></td>
+                            <td></td><td></td><td></td><td></td><td></td><td></td>
+                        </tr>
+                        <tr>
+                            <td>Fork para versión de Escritorio</td>
+                            <td></td><td></td>
+                            <td><div
+                                    class="task-bar software"
+                                    style="left: 5%; width: 90%;">Desktop</div></td>
+                            <td><div
+                                    class="task-bar software"
+                                    style="left: 5%; width: 90%;">Desktop</div></td>
+
+                            <td></td><td></td><td></td></td><td>
+                        </tr>
+                        <tr>
+                            <td>Optimización interfaz y pruebas usabilidad</td>
+                            <td></td><td></td><td></td>
+                            <td><div
+                                    class="task-bar software"
+                                    style="left: 5%; width: 90%;">UI/UX</div></td>
+                            <td><div
+                                    class="task-bar software"
+                                    style="left: 5%; width: 90%;">UI/UX</div></td>
+                            <td></td><td></td><td></td>
+                        </tr>
+                        <tr>
+                            <td>Backend y APIs</td>
+                            <td></td><td></td><td></td><td></td>
+                            <td><div class="task-bar software"
+                                    style="left: 5%; width: 90%;">APIs</div></td>
+                            <td><div class="task-bar software"
+                                    style="left: 5%; width: 90%;">APIs</div></td>
+                            <td></td><td></td><td></td><td></td>
+                        </tr>
+
+                        <tr>
+                            <td>Infraestructura en la nube</td>
+                            <td></td><td></td><td></td><td></td><td></td>
+                            <td><div class="task-bar software"
+                                    style="left: 5%; width: 90%;">Cloud</div></td>
+                            <td><div class="task-bar software"
+                                    style="left: 5%; width: 90%;">Cloud</div></td>
+                            <td></td><td></td><td></td>
+                        </tr>
+
+                        <tr>
+                            <td>Gráficas y Reportes en HMI automáricos</td>
+                            <td></td><td></td><td></td><td></td><td></td><td></td>
+                            <td><div class="task-bar software"
+                                    style="left: 5%; width: 90%;">Reportes</div></td>
+                            <td><div class="task-bar software"
+                                    style="left: 5%; width: 90%;">Reportes</div></td>
+                            <td></td><td></td>
+                        </tr>
+
+                        <!-- DESARROLLO IoT -->
+                        <tr>
+                            <td class="category-header">🔧 DESARROLLO IoT
+                                (Comunicación, Electronica y Sensores)</td>
+                            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                        </tr>
+                        <tr>
+                            <td>Investigación y selección sensores</td>
+                            <td><div class="task-bar iot"
+                                    style="left: 5%; width: 90%;">Sensores</div></td>
+                            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                        </tr>
+                        <tr>
+                            <td>Diseño esquema electrónico</td>
+                            <td></td>
+                            <td><div class="task-bar iot"
+                                    style="left: 5%; width: 90%;">Esquemas</div></td>
+                            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                        </tr>
+                        <tr>
+                            <td>Procurement y ensamblaje</td>
+                            <td></td>
+                            <td><div class="task-bar iot"
+                                    style="left: 5%; width: 90%;">Compras</div></td>
+                            <td><div class="task-bar iot"
+                                    style="left: 5%; width: 90%;">Ensamble</div></td>
+                            <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                        </tr>
+                        <tr>
+                            <td>Desarrollo firmware</td>
+                            <td></td><td></td>
+                            <td><div class="task-bar iot"
+                                    style="left: 5%; width: 90%;">Firmware</div></td>
+                            <td><div class="task-bar iot"
+                                    style="left: 5%; width: 90%;">Firmware</div></td>
+                            <td></td><td></td><td></td><td></td><td></td><td></td>
+                        </tr>
+                        <tr>
+                            <td>Comunicación MQTT/HTTP</td>
+                            <td></td><td></td><td></td>
+                            <td><div class="task-bar iot"
+                                    style="left: 5%; width: 90%;">MQTT</div></td>
+                            <td><div class="task-bar iot"
+                                    style="left: 5%; width: 90%;">MQTT</div></td>
+                            <td></td><td></td><td></td><td></td><td></td>
+                        </tr>
+                        <tr>
+                            <td>Calibración y pruebas sensores</td>
+                            <td></td><td></td><td></td><td></td>
+                            <td><div class="task-bar iot"
+                                    style="left: 5%; width: 90%;">Calibr.</div></td>
+                            <td><div class="task-bar iot"
+                                    style="left: 5%; width: 90%;">Calibr.</div></td>
+                            <td></td><td></td><td></td><td></td>
+                        </tr>
+                        <tr>
+                            <td>Optimización energética</td>
+                            <td></td><td></td><td></td><td></td><td></td>
+                            <td><div class="task-bar iot"
+                                    style="left: 5%; width: 90%;">Energía</div></td>
+                            <td><div class="task-bar iot"
+                                    style="left: 5%; width: 90%;">Energía</div></td>
+                            <td></td><td></td><td></td>
+                        </tr>
+
+                        <!-- DESARROLLO MECATRÓNICO -->
+                        <tr>
+                            <td class="category-header">⚙️ DESARROLLO
+                                MECATRÓNICO</td>
+                            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                        </tr>
+                        <tr>
+                            <td>Análisis sistema propulsión y
+                                soporte</td><td><div
+                                    class="task-bar mechatronics"
+                                    style="left: 5%; width: 90%;">Análisis</div></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                        </tr>
+                        <tr>
+                            <td>Diseño de la morfología del
+                                USV</td><td></td><td><div
+                                    class="task-bar mechatronics"
+                                    style="left: 5%; width: 90%;">Morfología</div></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                            <tr>
+                                <td>Selección de materiales
+                                    resistentes</td><td></td><td><div
+                                        class="task-bar mechatronics"
+                                        style="left: 5%; width: 90%;">Materiales</div></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                            </tr>
+                            <tr>
+                                <td>Análisis de algoritmos control de
+                                    trayectoria</td>
+                                <td></td><td></td>
+                                <td><div class="task-bar mechatronics"
+                                        style="left: 5%; width: 90%;">Control</div></td>
+                                <td><div class="task-bar mechatronics"
+                                        style="left: 5%; width: 90%;">Control</div></td>
+                                <td></td><td></td><td></td><td></td><td></td><td></td>
+                            </tr>
+                            <tr>
+                                <td>Construcción y montaje
+                                    estructura</td><td></td><td></td><td></td><td><div
+                                        class="task-bar mechatronics"
+                                        style="left: 5%; width: 90%;">Montaje</div></td><td><div
+                                        class="task-bar mechatronics"
+                                        style="left: 5%; width: 90%;">Montaje</div></td><td><div
+                                        class="task-bar mechatronics"
+                                        style="left: 5%; width: 90%;">Montaje</div></td><td></td><td></td><td></td><td></td>
+                            </tr>
+                            <tr>
+                                <td>Ajustes de estabilidad y
+                                    maniobrabilidad</td><td></td><td></td><td></td><td></td><td></td><td></td><td><div
+                                        class="task-bar mechatronics"
+                                        style="left: 5%; width: 90%;">Ajustes</div></td><td><div
+                                        class="task-bar mechatronics"
+                                        style="left: 5%; width: 90%;">Ajustes</div></td><td></td><td></td><td></td>
+                            </tr>
+
+                            <!-- INTEGRACIÓN Y PRUEBAS -->
+                            <tr>
+                                <td class="category-header">🔄 INTEGRACIÓN Y
+                                    PRUEBAS</td>
+                                <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                            </tr>
+                            <tr>
+                                <td>Integración de sensores con
+                                    HMI</td><td></td><td></td><td></td><td></td><td></td><td></td><td><div
+                                        class="task-bar integration"
+                                        style="left: 5%; width: 90%;">Integración</div></td><td></td><td></td><td></td>
+                            </tr>
+                            <tr>
+                                <td>Pruebas de comunicación y
+                                    transmisión</td><td></td><td></td><td></td><td></td><td></td><td></td><td><div
+                                        class="task-bar integration"
+                                        style="left: 5%; width: 90%;">Pruebas</div></td><td><div
+                                        class="task-bar integration"
+                                        style="left: 5%; width: 90%;">Pruebas</div></td><td></td><td></td>
+                            </tr>
+                            <tr>
+                                <td>Validación funcional en
+                                    laboratorio</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td><div
+                                        class="task-bar integration"
+                                        style="left: 5%; width: 90%;">Validación
+                                        Lab</div></td><td><div
+                                        class="task-bar integration"
+                                        style="left: 5%; width: 90%;">Validación
+                                        Lab</div></td><td></td>
+                            </tr>
+                            <tr>
+                                <td>Pruebas de campo en Caño Juan
+                                    Angola</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td><div
+                                        class="task-bar integration"
+                                        style="left: 5%; width: 90%;">Pruebas
+                                        Campo</div></td><td><div
+                                        class="task-bar integration"
+                                        style="left: 5%; width: 90%;">Pruebas
+                                        Campo</div></td>
+                            </tr>
+
+                            <!-- HITOS PRINCIPALES -->
+                            <tr>
+                                <td class="category-header">🎯 HITOS
+                                    PRINCIPALES</td>
+                                <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                            </tr>
+                            <tr>
+                                <td>Arquitectura IoT Completada</td>
+                                <td></td><td></td><td></td><td></td>
+                                <td><div class="milestone">M1</div></td>
+                                <td></td><td></td><td></td><td></td><td></td>
+                            </tr>
+                            <tr>
+                                <td>Prototipo físico ensamblado</td>
+                                <td></td><td></td><td></td><td></td><td></td>
+                                <td><div class="milestone">M2</div></td>
+                                <td></td><td></td><td></td><td></td>
+                            </tr>
+                            <tr>
+                                <td>HMI funcional e integración inicial</td>
+                                <td></td><td></td><td></td><td></td><td><td>
+                                        <td><div
+                                                class="milestone">M3</div></td><td></td><td></td><td></td>
+                                    </tr>
+                                    <tr>
+                                        <td>USV validado en campo</td>
+                                        <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                                        <td><div class="milestone">M4</div></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="legend">
+                            <div class="legend-item">
+                                <div class="legend-color software"></div>
+                                <span class="legend-text">Desarrollo de
+                                    Software</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color iot"></div>
+                                <span class="legend-text">Desarrollo IoT</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color mechatronics"></div>
+                                <span class="legend-text">Desarrollo
+                                    Mecatrónico</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color integration"></div>
+                                <span class="legend-text">Integración y
+                                    Pruebas</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color"
+                                    style="background: linear-gradient(45deg, #e53e3e, #c53030); border-radius: 50%;"></div>
+                                <span class="legend-text">Hitos
+                                    Principales</span>
+                            </div>
+                        </div>
+                    </div>
+                </body>
+            </html>
