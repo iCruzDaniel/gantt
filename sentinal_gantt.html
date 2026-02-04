@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagrama de Gantt - Desarrollo HMI USV</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #1f4e78 0%, #2e5a8a 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 { font-size: 28px; margin-bottom: 10px; }
+        .header p { font-size: 16px; opacity: 0.9; }
+        .info-section {
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        .info-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #4472c4;
+        }
+        .info-item strong { color: #1f4e78; display: block; margin-bottom: 5px; }
+        .gantt-container {
+            padding: 20px;
+            overflow-x: auto;
+        }
+        .gantt-chart { min-width: 1400px; }
+        .gantt-header, .gantt-row {
+            display: grid;
+            grid-template-columns: 40px 250px 350px 120px 80px repeat(16, 45px);
+            gap: 1px;
+            background: #e9ecef;
+            margin-bottom: 2px;
+        }
+        .gantt-cell {
+            background: white;
+            padding: 8px 6px;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+        }
+        .gantt-header .gantt-cell {
+            background: #1f4e78;
+            color: white;
+            font-weight: bold;
+            justify-content: center;
+        }
+        .fase-row .gantt-cell:nth-child(1),
+        .fase-row .gantt-cell:nth-child(2),
+        .fase-row .gantt-cell:nth-child(3) {
+            background: #4472c4;
+            color: white;
+            font-weight: bold;
+        }
+        .fase-row .week-cell { background: #4472c4; }
+        .subsistema-row .gantt-cell:nth-child(2),
+        .subsistema-row .gantt-cell:nth-child(3) {
+            background: #8ea9db;
+            font-weight: bold;
+        }
+        .week-cell {
+            background: white;
+            position: relative;
+        }
+        .bar {
+            height: 18px;
+            border-radius: 3px;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .bar-fase1 { background: #1f4e78; }
+        .bar-fase2 { background: #70ad47; }
+        .bar-fase3 { background: #ffc000; }
+        .bar-fase4 { background: #ed7d31; }
+        .bar-fase5 { background: #5b9bd5; }
+        .bar-fase6 { background: #c00000; }
+        .bar-fase7 { background: #a64d79; }
+        .priority-alta { color: #c00000; font-weight: bold; }
+        .priority-media { color: #ed7d31; font-weight: bold; }
+        .legend {
+            padding: 20px 30px;
+            background: #f8f9fa;
+        }
+        .legend h3 { color: #1f4e78; margin-bottom: 15px; }
+        .legend-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+        .legend-item { display: flex; align-items: center; gap: 10px; }
+        .legend-color {
+            width: 30px;
+            height: 20px;
+            border-radius: 4px;
+        }
+        .notes {
+            padding: 20px 30px;
+            background: #fff3cd;
+            border-top: 3px solid #ffc107;
+        }
+        .notes h3 { color: #856404; margin-bottom: 15px; }
+        .notes ul { list-style: none; }
+        .notes li {
+            padding: 5px 0 5px 20px;
+            color: #856404;
+            position: relative;
+        }
+        .notes li:before {
+            content: "▸";
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+        }
+        .milestones {
+            padding: 20px 30px;
+            background: #e8f5e9;
+            border-top: 3px solid #4caf50;
+        }
+        .milestones h3 { color: #2e7d32; margin-bottom: 15px; }
+        .milestone-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+        }
+        .milestone-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #4caf50;
+        }
+        .milestone-item strong { color: #2e7d32; display: block; margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>CRONOGRAMA DE DESARROLLO HMI SENTINEL- USV</h1>
+            <p>Proyecto: Implementación de Sistema de Interfaz Hombre-Máquina para Vehículo de Superficie No Tripulado</p>
+            <p>Período: 16 Semanas | Componente: HMI y Comunicaciones</p>
+        </div>
+
+        <div class="info-section">
+            <div class="info-grid">
+                <div class="info-item">
+                    <strong>Proyecto</strong>
+                    USV para Muestreo Ambiental
+                </div>
+                <div class="info-item">
+                    <strong>Área</strong>
+                    Ingeniería de Sistemas - HMI
+                </div>
+                <div class="info-item">
+                    <strong>Duración</strong>
+                    16 semanas (4 meses)
+                </div>
+                <div class="info-item">
+                    <strong>Tutor</strong>
+                    Jairo Serrano
+                </div>
+                <div class="info-item">
+                    <strong>Arquitectura</strong>
+                    Monolítica por Capas (React + Python)
+                </div>
+                <div class="info-item">
+                    <strong>Infraestructura</strong>
+                    AWS IoT Core + Timestream + Cognito
+                </div>
+            </div>
+        </div>
+
+        <div class="gantt-container">
+            <div class="gantt-chart">
+                <div class="gantt-header">
+                    <div class="gantt-cell">#</div>
+                    <div class="gantt-cell">FASE</div>
+                    <div class="gantt-cell">ACTIVIDAD</div>
+                    <div class="gantt-cell">RESPONSABLE</div>
+                    <div class="gantt-cell">PRIORIDAD</div>
+                    <div class="gantt-cell">S1</div>
+                    <div class="gantt-cell">S2</div>
+                    <div class="gantt-cell">S3</div>
+                    <div class="gantt-cell">S4</div>
+                    <div class="gantt-cell">S5</div>
+                    <div class="gantt-cell">S6</div>
+                    <div class="gantt-cell">S7</div>
+                    <div class="gantt-cell">S8</div>
+                    <div class="gantt-cell">S9</div>
+                    <div class="gantt-cell">S10</div>
+                    <div class="gantt-cell">S11</div>
+                    <div class="gantt-cell">S12</div>
+                    <div class="gantt-cell">S13</div>
+                    <div class="gantt-cell">S14</div>
+                    <div class="gantt-cell">S15</div>
+                    <div class="gantt-cell">S16</div>
+                </div>
+
+                <!-- FASE 1: ANÁLISIS Y DISEÑO -->
+                <div class="gantt-row fase-row">
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">FASE 1</div>
+                    <div class="gantt-cell">ANÁLISIS Y DISEÑO ARQUITECTÓNICO</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell"></div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">1</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Análisis de requerimientos del HMI</div>
+                    <div class="gantt-cell">Sistemas</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"><div class="bar bar-fase1" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">2</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Definición de casos de uso principales</div>
+                    <div class="gantt-cell">Sistemas</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"><div class="bar bar-fase1" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">3</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Diseño de arquitectura monolítica por capas</div>
+                    <div class="gantt-cell">Sistemas</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase1" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">4</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Especificación de componentes React</div>
+                    <div class="gantt-cell">Frontend</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase1" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">5</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Diseño de comunicaciones (MQTT/WebSocket)</div>
+                    <div class="gantt-cell">Backend</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase1" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">6</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Modelado de base de datos MySQL</div>
+                    <div class="gantt-cell">Backend</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase1" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+
+                <!-- FASE 2: INFRAESTRUCTURA -->
+                <div class="gantt-row fase-row">
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">FASE 2</div>
+                    <div class="gantt-cell">CONFIGURACIÓN DE INFRAESTRUCTURA</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell"></div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">7</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Configuración de Ubuntu con Docker</div>
+                    <div class="gantt-cell">DevOps</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase2" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">8</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Setup de contenedores (MySQL, API, Frontend)</div>
+                    <div class="gantt-cell">DevOps</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase2" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">9</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Configuración AWS IoT Core</div>
+                    <div class="gantt-cell">Cloud</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase2" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">10</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Configuración Amazon Timestream</div>
+                    <div class="gantt-cell">Cloud</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase2" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">11</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Implementación Amazon Cognito</div>
+                    <div class="gantt-cell">Backend</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase2" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">12</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Configuración API Gateway con JWT</div>
+                    <div class="gantt-cell">Backend</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase2" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">13</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Pruebas de autenticación JWT</div>
+                    <div class="gantt-cell">Backend</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase2" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+
+                <!-- FASE 3: DESARROLLO BACKEND -->
+                <div class="gantt-row fase-row">
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">FASE 3</div>
+                    <div class="gantt-cell">DESARROLLO DEL BACKEND</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell"></div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">14</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Desarrollo API REST - Gestión de usuarios</div>
+                    <div class="gantt-cell">Backend</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase3" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">15</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Endpoints CRUD para usuarios</div>
+                    <div class="gantt-cell">Backend</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase3" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">16</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Integración con MySQL</div>
+                    <div class="gantt-cell">Backend</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase3" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">17</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">API para consulta de datos de sensores</div>
+                    <div class="gantt-cell">Backend</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase3" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">18</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Integración con Amazon Timestream</div>
+                    <div class="gantt-cell">Backend</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase3" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">19</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Endpoints de series temporales</div>
+                    <div class="gantt-cell">Backend</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase3" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">20</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Configuración AWS IoT Core MQTT</div>
+                    <div class="gantt-cell">Backend</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase3" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">21</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Desarrollo WebSocket server</div>
+                    <div class="gantt-cell">Backend</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase3" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">22</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Pruebas de latencia (objetivo ≤ 0.5s)</div>
+                    <div class="gantt-cell">Backend</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase3" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+
+                <!-- FASE 4: DESARROLLO FRONTEND -->
+                <div class="gantt-row fase-row">
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">FASE 4</div>
+                    <div class="gantt-cell">DESARROLLO DEL FRONTEND</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell"></div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">23</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Setup proyecto React</div>
+                    <div class="gantt-cell">Frontend</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase4" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">24</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Implementación React Router</div>
+                    <div class="gantt-cell">Frontend</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase4" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">25</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Componentes de autenticación (Login/Registro)</div>
+                    <div class="gantt-cell">Frontend</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase4" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">26</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Layout principal y navegación</div>
+                    <div class="gantt-cell">Frontend</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase4" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">27</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Dashboard con gráficos de tendencias</div>
+                    <div class="gantt-cell">Frontend</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase4" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">28</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Indicadores tiempo real (pH, turbidez, OD, temp)</div>
+                    <div class="gantt-cell">Frontend</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase4" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">29</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Integración WebSocket para datos en vivo</div>
+                    <div class="gantt-cell">Frontend</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase4" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">30</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Sistema de alertas visuales</div>
+                    <div class="gantt-cell">Frontend</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase4" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">31</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Panel de control del USV</div>
+                    <div class="gantt-cell">Frontend</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase4" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">32</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Visualización estado del vehículo</div>
+                    <div class="gantt-cell">Frontend</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase4" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">33</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Controles de navegación</div>
+                    <div class="gantt-cell">Frontend</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase4" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+
+                <!-- FASE 5: FUNCIONALIDADES AVANZADAS -->
+                <div class="gantt-row fase-row">
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">FASE 5</div>
+                    <div class="gantt-cell">FUNCIONALIDADES AVANZADAS</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell"></div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">34</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Sistema de almacenamiento 24h de datos</div>
+                    <div class="gantt-cell">Backend</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase5" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">35</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Exportación a CSV</div>
+                    <div class="gantt-cell">Backend</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase5" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">36</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Generación de reportes PDF</div>
+                    <div class="gantt-cell">Backend</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase5" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">37</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Historial de misiones</div>
+                    <div class="gantt-cell">Frontend</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase5" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">38</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Implementación modo nocturno</div>
+                    <div class="gantt-cell">Frontend</div>
+                    <div class="gantt-cell priority-media" style="justify-content: center;">Media</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase5" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">39</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Optimización de usabilidad</div>
+                    <div class="gantt-cell">Frontend</div>
+                    <div class="gantt-cell priority-media" style="justify-content: center;">Media</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase5" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">40</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Sistema de ayuda/tooltips</div>
+                    <div class="gantt-cell">Frontend</div>
+                    <div class="gantt-cell priority-media" style="justify-content: center;">Media</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase5" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">41</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Responsive design (móviles/tablets)</div>
+                    <div class="gantt-cell">Frontend</div>
+                    <div class="gantt-cell priority-media" style="justify-content: center;">Media</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase5" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+
+                <!-- FASE 6: INTEGRACIÓN Y PRUEBAS -->
+                <div class="gantt-row fase-row">
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">FASE 6</div>
+                    <div class="gantt-cell">INTEGRACIÓN Y PRUEBAS</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell"></div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">42</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Integración completa de componentes</div>
+                    <div class="gantt-cell">Todos</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase6" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">43</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Pruebas end-to-end del flujo completo</div>
+                    <div class="gantt-cell">Todos</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase6" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">44</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Validación de requerimientos funcionales</div>
+                    <div class="gantt-cell">Todos</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase6" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">45</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Pruebas de latencia y rendimiento</div>
+                    <div class="gantt-cell">Backend</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase6" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">46</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Pruebas de carga y estrés</div>
+                    <div class="gantt-cell">Backend</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase6" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">47</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Corrección de bugs críticos</div>
+                    <div class="gantt-cell">Todos</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase6" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+
+                <!-- FASE 7: DOCUMENTACIÓN Y ENTREGA -->
+                <div class="gantt-row fase-row">
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">FASE 7</div>
+                    <div class="gantt-cell">DOCUMENTACIÓN Y ENTREGA FINAL</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell"></div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">48</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Documentación de arquitectura del sistema</div>
+                    <div class="gantt-cell">Sistemas</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase7" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">49</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Manual de usuario del HMI</div>
+                    <div class="gantt-cell">Frontend</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase7" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">50</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Documentación de API (endpoints, schemas)</div>
+                    <div class="gantt-cell">Backend</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase7" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">51</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Guía de instalación y configuración</div>
+                    <div class="gantt-cell">DevOps</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase7" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">52</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Guía de troubleshooting</div>
+                    <div class="gantt-cell">Todos</div>
+                    <div class="gantt-cell priority-media" style="justify-content: center;">Media</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase7" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">53</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Video demostrativo del sistema</div>
+                    <div class="gantt-cell">Todos</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase7" style="left: 0%; width: 100%;"></div></div><div class="week-cell"></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">54</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Preparación de presentación final</div>
+                    <div class="gantt-cell">Todos</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase7" style="left: 0%; width: 100%;"></div></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">55</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Material de apoyo (slides, posters)</div>
+                    <div class="gantt-cell">Todos</div>
+                    <div class="gantt-cell priority-media" style="justify-content: center;">Media</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase7" style="left: 0%; width: 100%;"></div></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">56</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Ensayos de presentación</div>
+                    <div class="gantt-cell">Todos</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase7" style="left: 0%; width: 100%;"></div></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">57</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">Entrega de código fuente y documentación</div>
+                    <div class="gantt-cell">Todos</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase7" style="left: 0%; width: 100%;"></div></div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gantt-cell" style="justify-content: center;">58</div>
+                    <div class="gantt-cell"></div>
+                    <div class="gantt-cell">🎯 PRESENTACIÓN FINAL DEL PROYECTO</div>
+                    <div class="gantt-cell">Todos</div>
+                    <div class="gantt-cell priority-alta" style="justify-content: center;">Alta</div>
+                    <div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"></div><div class="week-cell"><div class="bar bar-fase7" style="left: 0%; width: 100%;"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="legend">
+            <h3>LEYENDA DE FASES</h3>
+            <div class="legend-grid">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #1f4e78;"></div>
+                    <span>Fase 1: Análisis y Diseño</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #70ad47;"></div>
+                    <span>Fase 2: Infraestructura</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ffc000;"></div>
+                    <span>Fase 3: Backend</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ed7d31;"></div>
+                    <span>Fase 4: Frontend</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #5b9bd5;"></div>
+                    <span>Fase 5: Funcionalidades Avanzadas</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #c00000;"></div>
+                    <span>Fase 6: Integración y Pruebas</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #a64d79;"></div>
+                    <span>Fase 7: Documentación y Entrega</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="milestones">
+            <h3>HITOS PRINCIPALES (MILESTONES)</h3>
+            <div class="milestone-grid">
+                <div class="milestone-item">
+                    <strong>H1: Diseño Completo (Semana 3)</strong>
+                    Arquitectura y especificaciones finalizadas y aprobadas
+                </div>
+                <div class="milestone-item">
+                    <strong>H2: Infraestructura Lista (Semana 5)</strong>
+                    Cloud y servicios de autenticación configurados
+                </div>
+                <div class="milestone-item">
+                    <strong>H3: Backend Funcional (Semana 8)</strong>
+                    API y comunicaciones IoT operativas
+                </div>
+                <div class="milestone-item">
+                    <strong>H4: Frontend Base (Semana 11)</strong>
+                    Interfaz principal y dashboard completados
+                </div>
+                <div class="milestone-item">
+                    <strong>H5: Sistema Completo (Semana 13)</strong>
+                    Todas las funcionalidades implementadas
+                </div>
+                <div class="milestone-item">
+                    <strong>H6: Sistema Validado (Semana 14)</strong>
+                    Pruebas completas y bugs críticos resueltos
+                </div>
+                <div class="milestone-item">
+                    <strong>H7: Entrega Final (Semana 16)</strong>
+                    Presentación oficial y entrega de proyecto
+                </div>
+            </div>
+        </div>
+
+        <div class="notes">
+            <h3>CRITERIOS DE ACEPTACIÓN TÉCNICOS</h3>
+            <ul>
+                <li><strong>Latencia de comunicación:</strong> ≤ 0.5 segundos</li>
+                <li><strong>Tasa de actualización:</strong> ≥ 1 Hz (una medición por segundo)</li>
+                <li><strong>Almacenamiento de datos:</strong> Mínimo 24 horas continuas</li>
+                <li><strong>Formatos de exportación:</strong> CSV y PDF funcionales</li>
+                <li><strong>Modo nocturno:</strong> Contraste ≥ 70%</li>
+                <li><strong>Usabilidad:</strong> Operación básica en < 15 minutos de entrenamiento</li>
+                <li><strong>Alcance de comunicación:</strong> 100m con pérdida < 5%</li>
+                <li><strong>Arquitectura:</strong> Monolítica por capas (React + Python + MySQL)</li>
+                <li><strong>Cloud:</strong> AWS IoT Core, Timestream, Cognito, API Gateway</li>
+                <li><strong>Comunicaciones:</strong> Dual MQTT (ingesta) + WebSocket (cliente)</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
